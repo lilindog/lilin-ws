@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    <h3>websocket测试</h3>
+    <hr>
+    <textarea id="textInp" cols="30" rows="10"></textarea>
+    <br>
+    <input type="button" value="发送数据" id="btn">
+    <hr>
+    <p id="show"></p>
+</body>
+<script>
+
+    let socket = new WebSocket("ws://127.0.0.1:80");
+
+    socket.onopen = ()=>{
+        console.log("已建立socket链接");
+
+        socket.onerror = function (err) {
+            console.log(err);
+        }
+        socket.onmessage = e => {
+            console.log("来数据啦：");
+            console.log(e);
+            document.getElementById("show").innerText = "有新数据来了！";
+        }
+        socket.onclose = () => {
+            console.log("链接已经关闭啦");
+        }
+    };
+    
+
+
+
+    document.getElementById("btn").addEventListener("click", e=>{
+     var value = document.getElementById("textInp").value;
+
+     console.log(value);
+     socket.send(value);
+    });
+</script>
+</html>
