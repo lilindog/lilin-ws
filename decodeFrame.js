@@ -4,13 +4,13 @@
  *
  * 解析websocket数据帧的函数
  * @buf <Buffer> 传入接收到的buf帧
- * @return <Object> 
+ * @return <Object> | null
  * 
  */ 
 
-function decodeDataFrame(buf) {
+function decodeFrame(buf) {
 
-    //1.字节数不足两位，直接退出
+    //1.字节数不足两位，直接退出（最基本的控制帧长度都不够，不返回才怪）
     if(buf.length < 2) return null;
 
     let frame = {}, index = 0;
@@ -27,7 +27,7 @@ function decodeDataFrame(buf) {
 
     frame.hasMask && (frame.mask = [buf[++index], buf[++index], buf[++index], buf[++index]] );
 
-    //2.控制帧显示长度与实际字节长度不匹配， 直接退出
+    //2.累计的字节长度小于小于控制帧给出的长度，说明还有数据包没有接受，所以返回假
     if(buf.length < (index + frame.size) ) return null;//这里size才是控制帧计算出的时机长度， len只记录低于126的真实长度
 
     let arr = [];
@@ -36,13 +36,15 @@ function decodeDataFrame(buf) {
             arr.push( buf[index+1 + i] ^ frame.mask[i % 4] );
         }
     }else{
-        arr = buf.slice(index);
+        arr = buf.slice(index+1);
     }
-    frame.opcode === 1 && (frame.data = Buffer.from(arr).toString("utf-8"));
+    
+    //opcode为2时作二进制数据处理，否则全部按文本数据处理
+    frame.opcode !== 2 && (frame.data = Buffer.from(arr).toString("utf-8"));
     frame.opcode === 2 && (frame.data = Buffer.from(arr));
 
     return frame;
 
 }
 
-module.exports = decodeDataFrame;
+module.exports = decodeFrame;

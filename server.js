@@ -2,10 +2,11 @@
 
 const net = require("net");
 const decode = require("./decodeFrame");
+const encode = require("./encodeFrame");
 
 
 var crypto = require('crypto');
-var WS = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+var WS = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';//魔术字符串，标准说是固定的
 
 let server = net.createServer(sock=>{
 
@@ -28,11 +29,19 @@ let server = net.createServer(sock=>{
 
         }else{
             
+            //累积data
             buffer = Buffer.concat([buffer, data]);
+            //获取data处理结果（可能是返回的数据对象，也可能是null）
             let f = decode(buffer);
+            //解析成功，显示数据，清空data累计
             if(f){
                 console.log(f);
                 buffer = Buffer.from([]);
+
+                //console.log(encode({data:"okok"}))
+                sock.write(encode({
+                    data: "okokok"
+                }));
             }
             
             
