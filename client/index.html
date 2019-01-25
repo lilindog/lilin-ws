@@ -26,7 +26,7 @@
         socket.onmessage = e => {
             console.log("来数据啦：");
             console.log(e);
-            document.getElementById("show").innerText = "有新数据来了！";
+            document.getElementById("show").innerText = e.data;
         }
         socket.onclose = () => {
             console.log("链接已经关闭啦");

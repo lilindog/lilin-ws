@@ -10,6 +10,7 @@ var WS = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';//魔术字符串，标准说是
 
 let server = net.createServer(sock=>{
 
+    //用于存储累积的data
     let buffer = Buffer.from([]);
 
     sock.on("data", data=>{
@@ -38,10 +39,12 @@ let server = net.createServer(sock=>{
                 console.log(f);
                 buffer = Buffer.from([]);
 
-                //console.log(encode({data:"okok"}))
-                sock.write(encode({
-                    data: "okokok"
-                }));
+                //测试回发数据
+                if(f.opcode !== 8){
+                    sock.write(encode({
+                        data: f.data
+                    }));
+                }
             }
             
             
@@ -52,8 +55,9 @@ let server = net.createServer(sock=>{
     });
 
     
-    sock.on("error", ()=>{
+    sock.on("error", err=>{
         console.log("sock出错啦");
+        console.log(err);
     });
 
 

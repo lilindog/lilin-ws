@@ -3,7 +3,7 @@
 /**
  *
  * 解析websocket数据帧的函数
- * @buf <Buffer> 传入接收到的buf帧
+ * @params buf <Buffer> 传入接收到的buf帧
  * @return <Object> | null
  * 
  */ 
@@ -40,8 +40,9 @@ function decodeFrame(buf) {
     }
     
     //opcode为2时作二进制数据处理，否则全部按文本数据处理
-    frame.opcode !== 2 && (frame.data = Buffer.from(arr).toString("utf-8"));
+    frame.opcode !== 2 && frame.opcode !== 8 && (frame.data = Buffer.from(arr).toString("utf-8"));
     frame.opcode === 2 && (frame.data = Buffer.from(arr));
+    frame.opcode === 8 && (frame.data = null);
 
     return frame;
 
