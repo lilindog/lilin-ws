@@ -5,9 +5,8 @@
  * 构造websocket数据帧的函数
  * @params frame <Object> 数据帧对象
  * @return <Buffer> 返回构造好的数据帧
- *
  * frame = {FIN: 0|1, opcode: 1|2|8, data: String|Buffer }
- *
+ * create by lilin on 2019/1/27
  */
 
 function encodeFrame(frame){

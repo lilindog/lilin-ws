@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Document</title>
+    <title>websocket_test</title>
 </head>
 <body>
     <h3>websocket测试</h3>
@@ -11,11 +11,11 @@
     <br>
     <input type="button" value="发送数据" id="btn">
     <hr>
-    <p id="show"></p>
+    <div id="show"></div>
 </body>
 <script>
-
-    let socket = new WebSocket("ws://127.0.0.1:80");
+    let show = document.getElementById("show");
+    let socket = new WebSocket("ws://127.0.0.1:8612");
 
     socket.onopen = ()=>{
         console.log("已建立socket链接");
@@ -25,8 +25,11 @@
         }
         socket.onmessage = e => {
             console.log("来数据啦：");
-            console.log(e);
-            document.getElementById("show").innerText = e.data;
+            console.log("接收到的数据长度：" + e.data.length);
+            let p = document.createElement("p");
+            p.style.color = "red";
+            p.innerText = `接收到(${e.data.length}): ${e.data}`;
+            show.appendChild(p);
         }
         socket.onclose = () => {
             console.log("链接已经关闭啦");
@@ -39,8 +42,12 @@
     document.getElementById("btn").addEventListener("click", e=>{
      var value = document.getElementById("textInp").value;
 
-     console.log(value);
+     console.log("已发送，长度为:" + value.length);
      socket.send(value);
+     let p = document.createElement("p");
+     p.style.color = "green";
+     p.innerText = `已发送(${value.length}): ${value}`;
+     show.appendChild(p);
     });
 </script>
 </html>

@@ -1,20 +1,14 @@
 
 
 const net = require("net");
-const decode = require("./decodeFrame");
-const encode = require("./encodeFrame");
-
-
-var crypto = require('crypto');
-var WS = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';//魔术字符串，标准说是固定的
+const send = require("./sendData");
+const receive = require("./receiveData");
+const crypto = require('crypto');
+const WS = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';//魔术字符串，标准说是固定的
 
 let server = net.createServer(sock=>{
 
-    //用于存储累积的data
-    let buffer = Buffer.from([]);
-
     sock.on("data", data=>{
-
 
         let str = data.toString();
         let key = str.match(/Sec-WebSocket-Key:.+/) && (str.match(/Sec-WebSocket-Key:.+/)[0].split(":")[1].replace(/\s/, ""));
@@ -27,27 +21,14 @@ let server = net.createServer(sock=>{
             sock.write('Connection: Upgrade\r\n');
             sock.write('Sec-WebSocket-Accept:' + crypto.createHash('sha1').update(key + WS).digest('base64') + "\r\n");
             sock.write('\r\n');
+            console.log("握手成功;连接建立。")
 
         }else{
             
-            //累积data
-            buffer = Buffer.concat([buffer, data]);
-            //获取data处理结果（可能是返回的数据对象，也可能是null）
-            let f = decode(buffer);
-            //解析成功，显示数据，清空data累计
-            if(f){
-                console.log(f);
-                buffer = Buffer.from([]);
-
-                //测试回发数据
-                if(f.opcode !== 8){
-                    sock.write(encode({
-                        data: f.data
-                    }));
-                }
-            }
-            
-            
+            receive(data, function(_data){
+                _data && console.log("接收到： " + _data);
+                _data && send(sock, _data);
+            });
 
         }
 
@@ -62,10 +43,11 @@ let server = net.createServer(sock=>{
 
 
 }); 
-server.on("error", ()=>{
+server.on("error", err=>{
     console.log("出错啦");
+    console.log(err);
 });
-server.listen(80, ()=>{
+server.listen(8612, ()=>{
     console.log("started")
 });
 
