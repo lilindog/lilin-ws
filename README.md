@@ -1,6 +1,6 @@
 # 一个简单的nodejs websocket服务类
 
-*几行简单的代码即可实现wensocket通信*
+*几行简单的代码即可实现websocket通信*
 
 ```javascript
 const Ws = require("./ws.js");
