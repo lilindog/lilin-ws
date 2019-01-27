@@ -23,7 +23,7 @@ class Ws{
                     let key = str.match(/Sec-WebSocket-Key:.+/) && (str.match(/Sec-WebSocket-Key:.+/)[0].split(":")[1].replace(/\s/, ""));
                     handshake(sock, key)
                     .then(()=>{
-                        this.onOpen && this.onOpen();
+                        this.onOpen && this.onOpen(sock);
                     })
                     .catch(() => {
                         this.onError && this.onError("握手错误");
@@ -31,8 +31,12 @@ class Ws{
                 }
                 //数据处理
                 else {
-                    receive(chunk, data=>{
-                        this.onMessage && this.onMessage(data);
+                    receive(chunk, (frameObj, data)=>{
+                        if(frameObj.opcode === 8){
+                            sock.destroy();
+                            return;
+                        }
+                        this.onMessage && this.onMessage(sock, data);
                     });
                 }
             });

@@ -1,5 +1,7 @@
 # 一个简单的nodejs websocket服务类
 
+<h3 style="border:none;border-radius:4px;padding:0 1rem;color:#fff;background:red;display:inline-block;">未完善</h3>
+
 *几行简单的代码即可实现websocket通信*
 
 ```javascript
