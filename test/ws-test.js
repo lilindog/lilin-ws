@@ -1,19 +1,40 @@
 "use strict";
 
-const Ws = require("../ws");
+//测试服务器
 
-const server = new Ws(8612);
+const Wss = require("../wss.class");
 
-server.onOpen = sock=>{
-    // console.log(sock);
-    console.log("有新的链接");
+let srv = new Wss();
+
+srv.onConnection = ws=>{
+
+    ws.onOpen = function(){
+        console.log("握手成功");
+        this.send("恭喜，握手成功");
+    }
+
+    ws.onMessage = function(obj, data){
+        console.log(data);
+        this.send("发回去：" + data);
+    }
+
+    ws.onError = function(msg){
+        console.log(msg);
+    }
+    
+    ws.onClose = function(){
+        console.log("一个ws链接关闭");
+    }
+};
+
+srv.onError = msg=>{
+    console.log("ws服务器出错："+msg);
 }
 
-server.onMessage = (sock, msg)=>{
-    // console.log(sock);
-    console.log("来消息啦：" + msg);
+srv.onClose = ()=> {
+    console.log("ws服务器关闭");
 }
 
-server.onError = msg=>{
-    console.log("错误：" + msg);
-}
+srv.listen(8612, ()=>{
+    console.log("ws服务启动...");
+});
