@@ -1,25 +1,47 @@
 # 一个简单的nodejs websocket服务类
 
-<h3 style="border:none;border-radius:4px;padding:0 1rem;color:#fff;background:red;display:inline-block;">未完善</h3>
-
 *几行简单的代码即可实现websocket通信*
 
 ```javascript
-const Ws = require("./ws.js");
 
-let server = new Ws(8080);
+//测试服务器
 
-server.onOpen = ()=>{
-    console.log("有新的链接");
+const Wss = require("../wss.class");
+
+let srv = new Wss();
+
+srv.onConnection = ws=>{
+
+    ws.onOpen = function(){
+        console.log("握手成功");
+        this.send("恭喜，握手成功");
+    }
+
+    ws.onMessage = function(obj, data){
+        console.log(data);
+        this.send("发回去：" + data);
+    }
+
+    ws.onError = function(msg){
+        console.log(msg);
+    }
+    
+    ws.onClose = function(){
+        console.log("一个ws链接关闭");
+    }
+};
+
+srv.onError = msg=>{
+    console.log("ws服务器出错："+msg);
 }
 
-server.onMessage = msg=>{
-    console.log("客户端来消息啦：" + msg);
+srv.onClose = ()=> {
+    console.log("ws服务器关闭");
 }
 
-server.onError = msg=>{
-    console.log("服务端发生错误：" + msg);
-}
+srv.listen(8612, ()=>{
+    console.log("ws服务启动...");
+});
 
 ```
 
