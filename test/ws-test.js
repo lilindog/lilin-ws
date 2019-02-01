@@ -15,7 +15,11 @@ srv.onConnection = ws=>{
 
     ws.onMessage = function(obj, data){
         console.log(data);
-        this.send("发回去：" + data);
+
+        //广播
+        srv.connections.forEach(ws=>{
+            ws.send(data);
+        });
     }
 
     ws.onError = function(msg){
@@ -24,6 +28,7 @@ srv.onConnection = ws=>{
     
     ws.onClose = function(){
         console.log("一个ws链接关闭");
+        srv.connections.delete(this);
     }
 };
 

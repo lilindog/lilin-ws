@@ -4,6 +4,7 @@ const Ws = require("./ws.class");
 class Wss{
     constructor(){
         this._server;
+        this.connections = new Set([]);
         this.onConnection;
         this.onError;
         this.onClose;
@@ -13,6 +14,7 @@ class Wss{
         this._server = new net.Server();
         this._server.on("connection", sock=>{
             let ws = new Ws(sock);
+            this.connections.add(ws);
             this.onConnection && this.onConnection(ws);
         });
         this._server.on("error", err=>{
