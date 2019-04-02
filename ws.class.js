@@ -1,47 +1,66 @@
 "use strict";
 
+const tools = require("./tools");
+const {EventEmitter:Emt} = require("events");
 const send = require("./lib/sendData");
 const receive = require("./lib/receiveData");
 const handshake = require("./lib/handshake");
 
-class Ws{
-    constructor(socket){
-        this.socket = socket;
-        this.onOpen;
-        this.onClose;
-        this.onMessage;
-        this.onError;
-        this._init();
-    }
-    _init(){
-        this.socket.on("data", chunk=>{
-            //握手
-            if (/Sec-Websocket-Key:.+/ig.test(chunk.toString())) {
-                let key = chunk.toString().match(/Sec-Websocket-Key:.+/ig)[0].split(":")[1].replace(" ", "");
-                handshake(this.socket, key)
-                .then(()=>{
-                    this.onOpen && this.onOpen();
-                })
-                .catch(msg=>{
-                    this.onError && this.onError(msg);
-                });
-            } 
-            //数据
-            else{
-                receive(chunk, (obj, data)=>{
-                    //处理关闭逻辑（标准规定websocket opcode为8时代表关闭）
-                    if(obj.opcode === 8){
-                        this.onClose && this.onClose();
-                        return;
-                    }
-                    this.onMessage && this.onMessage(obj, data);
+module.exports = Ws;
+
+//继承EventEmitter
+tools.extend(Ws, Emt);
+
+//socket类
+function Ws(socket){
+    //保存真正sock
+    this.sock = socket;
+
+    this.sock.on("data", chunk=>{
+        receive(chunk, (obj, str)=>{
+            //接收到ping时直接发回pong
+            if(obj.opcode === 9){
+                this.send({
+                    data: "",
+                    FIN: 1,
+                    opcode: 10
                 });
             }
+            //接收数据
+            if(obj.opcode === 2){
+                this.emit("data", str);
+            }
         });
-    }
-    send(data){
-        send(this.socket, data);
-    }
+    });
+
+    this.sock.on("error", error=> {
+        this.emit("error", error);
+    });
+
+    this.sock.on("close", chunk => {
+        this.emit("data", chunk);
+    });
 }
 
-module.exports = Ws;
+//发送数据的方法
+Ws.prototype.send = function(data){
+    send(this.sock, data);
+}
+
+//发送ping
+Ws.prototype.ping = function(){
+    send(this.sock, {
+        data: "",
+        FIN: 1,
+        opcode: 9
+    });
+}
+
+//发送pong
+Ws.prototype.pong = function () {
+    send(this.sock, {
+        data: "",
+        FIN: 1,
+        opcode: 10
+    });
+}

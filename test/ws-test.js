@@ -14,7 +14,9 @@ srv.onConnection = ws=>{
     }
 
     ws.onMessage = function(obj, data){
-        console.log(data);
+        obj.data = "...";
+        console.log(obj);
+        console.log("-------------------")
 
         //广播
         srv.connections.forEach(ws=>{
