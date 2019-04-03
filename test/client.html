@@ -15,7 +15,7 @@
 </body>
 <script>
     let show = document.getElementById("show");
-    let socket = new WebSocket("ws://127.0.0.1:8612");
+    let socket = new WebSocket("ws://127.0.0.1:8612/socket");
 
     socket.onopen = ()=>{
         console.log("已建立socket链接");

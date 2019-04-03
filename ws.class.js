@@ -4,7 +4,6 @@ const tools = require("./tools");
 const {EventEmitter:Emt} = require("events");
 const send = require("./lib/sendData");
 const receive = require("./lib/receiveData");
-const handshake = require("./lib/handshake");
 
 module.exports = Ws;
 
@@ -17,7 +16,9 @@ function Ws(socket){
     this.sock = socket;
 
     this.sock.on("data", chunk=>{
+    
         receive(chunk, (obj, str)=>{
+            
             //接收到ping时直接发回pong
             if(obj.opcode === 9){
                 this.send({
@@ -25,20 +26,26 @@ function Ws(socket){
                     FIN: 1,
                     opcode: 10
                 });
+                return;
+            }
+            //opcode为8，直接触发ws关闭
+            if(obj.opcode === 8){
+                this.emit("close");
+                return;
             }
             //接收数据
-            if(obj.opcode === 2){
-                this.emit("data", str);
-            }
+            this.emit("data", str);
         });
+
     });
 
     this.sock.on("error", error=> {
         this.emit("error", error);
     });
 
-    this.sock.on("close", chunk => {
-        this.emit("data", chunk);
+    this.sock.on("close", ()=> {
+        this.emit("destroy");
+        this.emit("close");
     });
 }
 
