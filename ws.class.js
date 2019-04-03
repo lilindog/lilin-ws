@@ -34,7 +34,12 @@ function Ws(socket){
                 return;
             }
             //接收数据
-            this.emit("data", str);
+            try{
+                let eventObj = JSON.parse(str);
+                this.emit(eventObj.name, eventObj.data);
+            }catch(e){
+                console.log("底层json解析的来自前端的事件封装json数据报错");
+            }
         });
 
     });
@@ -50,12 +55,12 @@ function Ws(socket){
 }
 
 //发送数据的方法
-Ws.prototype.send = function(data){
+Ws.prototype._send = function(data){
     send(this.sock, data);
 }
 
 //发送ping
-Ws.prototype.ping = function(){
+Ws.prototype._ping = function(){
     send(this.sock, {
         data: "",
         FIN: 1,
@@ -64,10 +69,24 @@ Ws.prototype.ping = function(){
 }
 
 //发送pong
-Ws.prototype.pong = function () {
+Ws.prototype._pong = function () {
     send(this.sock, {
         data: "",
         FIN: 1,
         opcode: 10
     });
+}
+
+/*
+* 与前端库lilin-wss库配合的事件触发方法
+* @param eventName <String> 事件名
+* @param data <String> 数据，一般是json
+*/
+Ws.prototype.trigger = function(eventName, data){
+    //这个对象是与前端lilin-wss库约定好的
+    let eventObj = {
+        name: eventName,
+        data: data
+    }
+    this._send(JSON.stringify(eventObj));
 }
