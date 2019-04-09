@@ -10,12 +10,11 @@ module.exports = Wss;
 tools.extend(Wss, Emt);
 
 function Wss(){
-
-    //客户端集合
+    //客户端集合,用于自己发送心跳，维护链接
     this.clients = new Set([]);
-
+    //保持心跳
+    this._holdConnection();
 }
-
 //添加客户端
 Wss.prototype.addClient = function(req, socket){
 
@@ -37,4 +36,11 @@ Wss.prototype.addClient = function(req, socket){
     });
     this.clients.add(_socket);
     this.emit("connection", _socket);
+}
+Wss.prototype._holdConnection = function(){
+    setInterval(() => {
+        this.clients.forEach(sock => {
+            sock._ping();
+        });
+    }, 10000);
 }

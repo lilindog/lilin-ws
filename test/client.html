@@ -5,79 +5,32 @@
     <title>websocket_test</title>
 </head>
 <body>
-    <h3>websocket测试</h3>
-    <hr>
-    <textarea id="textInp" cols="30" rows="10"></textarea>
-    <br>
-    <input type="button" value="发送数据" id="btn">
-    <hr>
-    <div id="show"></div>
+    <h3>websocket测试</h3> 
 </body>
 <script src="./lilin-wss-client.js"></script>
 <script>
-    let show = document.getElementById("show");
-    // let socket = new WebSocket("ws://127.0.0.1:8612/socket");
 
-    // socket.onopen = ()=>{
-    //     console.log("已建立socket链接");
-
-    //     socket.onerror = function (err) {
-    //         console.log(err);
-    //     }
-    //     socket.onmessage = e => {
-    //         console.log("来数据啦：");
-    //         console.log("接收到的数据长度：" + e.data.length);
-    //         let p = document.createElement("p");
-    //         p.style.color = "red";
-    //         p.innerText = `接收到(${e.data.length}): ${e.data}`;
-    //         show.appendChild(p);
-    //     }
-    //     socket.onclose = () => {
-    //         console.log("链接已经关闭啦");
-    //     }
-    // };
-
-    // document.getElementById("btn").addEventListener("click", e=>{
-    //  var value = document.getElementById("textInp").value;
-
-    //  console.log("已发送，长度为:" + value.length);
-    //  socket.send(value);
-    //  let p = document.createElement("p");
-    //  p.style.color = "green";
-    //  p.innerText = `已发送(${value.length}): ${value}`;
-    //  show.appendChild(p);
-    // });
-    
 
 
 
     let ws = new Ws("ws://127.0.0.1:8612/socket");
     ws.on("open", ()=>{
         console.log("已建立socket链接");
+
+        setInterval(() => {
+            ws.trigger("test", "--");
+        }, 1000);
     })
 
-
-    document.getElementById("btn").addEventListener("click", e=>{
-     var value = document.getElementById("textInp").value;
-
-     console.log("已发送，长度为:" + value.length);
-     let p = document.createElement("p");
-     p.style.color = "green";
-     p.innerText = `已发送(${value.length}): ${value}`;
-     show.appendChild(p);
-
-     ws.trigger("hello", value);
-
-     ws.on("message", data=>{
+    ws.on("message", data=>{
         console.log("来数据啦：");
-        console.log("接收到的数据长度：" + data.length);
-        let p = document.createElement("p");
-        p.style.color = "red";
-        p.innerText = `接收到(${data.length}): ${data}`;
-        show.appendChild(p);
-     });
-
-     
+        console.log(data);
     });
+
+    ws.on("ping", data => {
+            alert("ping来啦：");
+        });
+
+
 </script>
 </html>

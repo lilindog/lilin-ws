@@ -17,20 +17,29 @@ srv.listen(8612, ()=>{
     console.log("http srv runing ...");
 });
 
+
+
+
+let clients = new Set([]);
 //为ws自定义事件
 wss.on("connection", sock=>{
 
-    sock.on("hello", data=>{
-        console.log("来自前端hello事件：" + data);
-        sock.trigger("message", data);
+    clients.add(sock);
+
+    sock.on("close", ()=>{
+        console.log("一个sock关闭");
+        clients.delete(sock);
     });
 
-    sock.on("fuck", data=>{
-        console.log("来自前端fuck事件：" + data);
-    });
-
-    sock.on("haha", data=>{
-        console.log("来自前端haha事件：" + data);
+    sock.on("test", data=>{
+        console.log(data);
     });
 
 });
+
+setInterval(() => {
+    clients.forEach(sock => {
+        sock.trigger("message", "hello 你好");
+    });  
+}, 500);
+

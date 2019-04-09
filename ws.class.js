@@ -33,12 +33,17 @@ function Ws(socket){
                 this.emit("close");
                 return;
             }
+            //接收到pong时不理会
+            if(obj.opcode === 10){
+                return;
+            }
             //接收数据
             try{
-                let eventObj = JSON.parse(str);
+                var eventObj = JSON.parse(str);
                 this.emit(eventObj.name, eventObj.data);
             }catch(e){
-                console.log("底层json解析的来自前端的事件封装json数据报错");
+                console.log("没能解析前端封装的json");
+                console.log(str);
             }
         });
 
