@@ -41,7 +41,6 @@
     Ws.prototype._init = function(){
         this._sock = new WebSocket(this._url);
         this._sock.onmessage = e => {
-            console.log(e);
             try {
                 let eventObj = JSON.parse(e.data);
                 this._reveiceEvents.trigger(eventObj.name, eventObj.data);

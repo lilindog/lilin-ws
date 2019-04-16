@@ -30,7 +30,7 @@ function Ws(socket){
             }
             //opcode为8，直接触发ws关闭
             if(obj.opcode === 8){
-                this.emit("close");
+                this.emit("close", this);
                 return;
             }
             //接收到pong时不理会
@@ -55,18 +55,19 @@ function Ws(socket){
 
     this.sock.on("close", ()=> {
         this.emit("destroy");
-        this.emit("close");
+        this.emit("close", this);
     });
 }
 
 //发送数据的方法
 Ws.prototype._send = function(data){
+    if(this.sock.destroyed) return;
     send(this.sock, data);
 }
 
 //发送ping
 Ws.prototype._ping = function(){
-    send(this.sock, {
+    this._send({
         data: "",
         FIN: 1,
         opcode: 9
@@ -75,7 +76,7 @@ Ws.prototype._ping = function(){
 
 //发送pong
 Ws.prototype._pong = function () {
-    send(this.sock, {
+    this._send({
         data: "",
         FIN: 1,
         opcode: 10

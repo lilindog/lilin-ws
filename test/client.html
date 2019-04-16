@@ -16,20 +16,16 @@
     let ws = new Ws("ws://127.0.0.1:8612/socket");
     ws.on("open", ()=>{
         console.log("已建立socket链接");
-
-        setInterval(() => {
-            ws.trigger("test", "--");
-        }, 1000);
+        ws.trigger("login");
     })
 
-    ws.on("message", data=>{
-        console.log("来数据啦：");
+    ws.on("login", data=>{
         console.log(data);
     });
 
-    ws.on("ping", data => {
-            alert("ping来啦：");
-        });
+    ws.on("step", data => {
+        console.log(data);
+    });
 
 
 </script>

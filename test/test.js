@@ -26,20 +26,21 @@ wss.on("connection", sock=>{
 
     clients.add(sock);
 
-    sock.on("close", ()=>{
-        console.log("一个sock关闭");
-        clients.delete(sock);
+    sock.on("login", ()=>{
+        clients.add(sock);
+        sock.trigger("login", "登录成功");
     });
 
-    sock.on("test", data=>{
-        console.log(data);
-    });
+    sock.on("close", sock=>{
+        console.log("删除一个");
+        clients.delete(sock);
+    })
 
 });
 
 setInterval(() => {
-    clients.forEach(sock => {
-        sock.trigger("message", "hello 你好");
-    });  
-}, 500);
+    clients.forEach(sock=>{
+        sock.trigger("step", new Date().getTime());
+    });
+}, 1000);
 
