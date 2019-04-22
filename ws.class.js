@@ -3,7 +3,7 @@
 const tools = require("./tools");
 const {EventEmitter:Emt} = require("events");
 const send = require("./lib/sendData");
-const receive = require("./lib/receiveData");
+const decode = require("./lib/decode");
 
 module.exports = Ws;
 
@@ -15,38 +15,9 @@ function Ws(socket){
     //保存真正sock
     this.sock = socket;
 
-    this.sock.on("data", chunk=>{
-    
-        receive(chunk, (obj, str)=>{
-            
-            //接收到ping时直接发回pong
-            if(obj.opcode === 9){
-                this.send({
-                    data: "",
-                    FIN: 1,
-                    opcode: 10
-                });
-                return;
-            }
-            //opcode为8，直接触发ws关闭
-            if(obj.opcode === 8){
-                this.emit("close", this);
-                return;
-            }
-            //接收到pong时不理会
-            if(obj.opcode === 10){
-                return;
-            }
-            //接收数据
-            try{
-                var eventObj = JSON.parse(str);
-                this.emit(eventObj.name, eventObj.data);
-            }catch(e){
-                console.log("没能解析前端封装的json");
-                console.log(str);
-            }
-        });
-
+    this.sock.on("data", chunk=>
+    {
+        this._decode(chunk);
     });
 
     this.sock.on("error", error=> {
@@ -58,6 +29,8 @@ function Ws(socket){
         this.emit("close", this);
     });
 }
+
+Ws.prototype._decode = decode;
 
 //发送数据的方法
 Ws.prototype._send = function(data){
