@@ -8,11 +8,7 @@ let wss = new Wss();
 let srv = http.createServer((req, res)=>{
     res.end("test srv ...");
 });
-srv.on("upgrade", (req, socket)=>{
-    if(req.url === "/socket"){
-        wss.addClient(req, socket);
-    }
-});
+wss.listen(srv, "/scoket");
 srv.listen(8612, ()=>{
     console.log("http srv runing ...");
 });
