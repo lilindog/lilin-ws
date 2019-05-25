@@ -22,21 +22,24 @@ wss.on("connection", sock=>{
 
     clients.add(sock);
 
-    sock.on("login", ()=>{
-        clients.add(sock);
-        sock.trigger("login", "登录成功");
+    sock.on("hello", data=>
+    {
+        console.log(data);
     });
 
-    sock.on("close", sock=>{
-        console.log("删除一个");
+    sock.on("close", sock=>
+    {
+        console.log("删除一个客户端")
         clients.delete(sock);
-    })
+    });
 
 });
 
+let index = 0;
 setInterval(() => {
+    index++;
     clients.forEach(sock=>{
-        sock.trigger("step", new Date().getTime());
+        sock.trigger("hello2", "你好前端"+index);
     });
 }, 1000);
 

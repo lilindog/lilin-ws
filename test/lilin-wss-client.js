@@ -1,17 +1,27 @@
 "use strict"
 
 
-/*
-* 配合 lilin-wss 模块使用的前端库 （仓库：https://github.com/lilindog/lilin-wss）
-* created by lilin on 2019.4.3 15:07
-*/
+/**
+ * 配合 lilin-wss 模块使用的前端库 （仓库：https://github.com/lilindog/lilin-wss）
+ * created by lilin on 2019.4.3 15:07
+ * last update 2019/5/25
+ */
 
 !function()
 {
     window.Ws = Ws;
-    /*
-    * Evets类
-    */
+
+    /**
+     * 输出错误的函数 
+     */
+    function debug(str = "")
+    {
+        console.error("[lilin-wss-client报错]：" + str);
+    }
+
+    /**
+     * Evets类
+     */
     function Events()
     {
         this._events = {};
@@ -28,36 +38,58 @@
             this._events[eventName] && this._events[eventName].forEach(cb=>{cb(data)});
         }
     }
-    /*
-    * wss类
-    */
+
+    /**
+     * wss类
+     */
     function Ws(url)
     {
         this._reveiceEvents = new Events();
         this._url = url;
         this._sock = null;
-        this._connected = false;
-        this._connecting = false;//是否在连接中
-        this._timer1;
-        this._timer2;
+
+        //链接超时定时器
+        this._t1 = null, //{setTimeout}
+        //创建连接超时时间
+        this.timeout = 3000;
+        //ping轮询定时器
+        this._t2 = null; //{setInterval}
+        //ping间隔时间
+        this.duration = 5000;
+        //链接中断判断定时器
+        this.t3 = null;//{setTimeout}
+        //ping pong之间最大时间
+        this.delay = 3000;
 
         //初始化websocket
         this._init();
     }
     Ws.prototype._init = function()
-    {
+    {   
+        /**
+         * 链接超时处理
+         * 超时时间截止，检查链接状况，若无连接则关闭连接 
+         */
+        this._t1 = setTimeout(() => 
+        {
+            clearTimeout(this._t1);
+            if(this._sock.readyState !== 1)
+            {
+                debug("创建连接超时!");
+                this._sock.close(1000);
+            }
+        }, this.timeout);
+
+
         this._sock = new WebSocket(this._url);
-        this._keepConnect();
         this._sock.onmessage = e => 
         {
             //优先获取自定义pong回复
             if(e.data === "PONG")
             {
-                console.log("PONG")
-                this._timer2 && clearTimeout(this._timer2);
+                this._t3 && clearTimeout(this._t3);
                 return;
             }
-
             //然后再处理数据（自定义事件）
             try 
             {
@@ -70,60 +102,74 @@
             }
         }
         this._sock.onopen = () => 
-        {
-            this._connected = true;
-            this._connecting = false;
+        {   
+            //触发open事件
             this._reveiceEvents.trigger("open");
+
+            //执行ping轮询
+            this._keepConnection();
         }
         this._sock.onerror = err => 
         {
-             this._reveiceEvents.trigger("error", err);
+            //这里的清除全部定时器虽然有点多余，但是有的情况下，websocket会直接触发onerror，所以不得不做处理
+            clearTimeout(this._t1);
+            clearInterval(this._t2);
+            clearTimeout(this._t3);
+
+            this._reveiceEvents.trigger("error");
         }
         this._sock.onclose = () => 
-        {
-            // this.reConnect();    
+        {   
+            //这里的清除全部定时器虽然有点多余，但是有的情况下，websocket会直接触发onclose，所以不得不做处理
+            clearTimeout(this._t1);
+            clearInterval(this._t2);
+            clearTimeout(this._t3);
+
+            //触发close事件
+            this._reveiceEvents.trigger("close");
+            debug("正在执行重连...");
+            //执行重连
+            this._init();
         }
     }
-    //执行心跳,维持链接，检测断开
-    Ws.prototype._keepConnect = function()
-    {
-        this._timer1 = setInterval(() => 
-        {
-            this._sock.readyState === 1 && this._sock.send("PING");
 
-            this._timer2 = setTimeout(() => 
+    Ws.prototype._keepConnection = function()
+    {   
+        //循环发送PING
+        this._t2 = setInterval(()=>
+        {   
+            if(this._sock.readyState !== 1)
             {
-                clearInterval(this._timer1);    
-                this._timer2 = null;
-                this._connected = false;
-                this._connecting = false;
-                this.reConnect();
+                return;
+            }
+            //发送PING
+            this._sock.send("PING");
+            //如果在下一个ping发出之前没有pong回复，那么高定时器回调就执行判断链接即为中断，直接执行sock.close();
+            this._t3 = setInterval(()=> 
+            {
+                clearInterval(this._t2);
+                clearTimeout(this._t3);
+                if(this._sock.readyState === 1)
+                {
+                    debug("连接已中断!");
+                    this._sock.close();
+                }
+                
+            }, this.delay);
 
-            }, 1000);//发出去的PING，1S内没有PONG回复，name就判断链接已经断开
+        }, this.duration);
+    }
 
-        }, 5000);//5S为间隔PING
-    }
-    //重连方法
-    Ws.prototype.reConnect = function()
-    {
-        //如果正在连接中或者已连接，直接退出
-        if(this._connected || this._connecting) return;
-        console.warn("[lilin-wss-client] websocket连接发生意外，正在尝试重连！");
-        this._reveiceEvents.trigger("close");
-        this._connected = false;
-        this._connecting = true;
-        this._init();
-    }
     Ws.prototype.on = function(eventName, cb)
     {
         if(!eventName || !cb || (typeof cb !== "function") ) throw new Error("注册事件出错");
         this._reveiceEvents.on(eventName, cb);
     }
+
     Ws.prototype.trigger = function(eventName, data)
     {
-        if(!this._connected)
+        if(this._sock.readyState !== 1)
         {
-            console.error("[lilin-wss-client报错] websocket已断开，不能trigger事件！");
             return;
         }
         let eventObj = {
@@ -134,13 +180,3 @@
     }
 
 }();
-
-/*
-* 修改日志
-* 
-* 把原来的通过浏览器websocket实例错误方法来处理重连的方式改为自己实现；因为前者亲测在远程服务器断开的时候反应非常慢
-* 
-* ！！！年轻的我以为在实际应用中可以通过WebSocket实例的onerror、onclose回调来触发重连机制，结果被现实狠狠的上了一课。
-* 
-*
-*/

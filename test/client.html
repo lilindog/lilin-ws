@@ -13,19 +13,26 @@
 
 
 
-    let ws = new Ws("ws://127.0.0.1:8612/socket");
+    let ws = new Ws("ws://lilin.site:8080/socket");
     ws.on("open", ()=>{
         console.log("已建立socket链接");
-        ws.trigger("login");
-    })
+        // f();
+    });
 
-    ws.on("login", data=>{
+    ws.on("hello2", data=>
+    {
         console.log(data);
     });
 
-    ws.on("step", data => {
-        console.log(data);
-    });
+    // let index = 0;
+    // function f() 
+    // {   
+    //     setInterval(() => 
+    //     {
+    //         index++;
+    //         ws.trigger("hello", "你好后端"+index);    
+    //     }, 1000);
+    // }
 
 
 </script>

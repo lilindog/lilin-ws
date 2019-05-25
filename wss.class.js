@@ -11,7 +11,7 @@ module.exports = Wss;
 tools.extend(Wss, Emt);
 function Wss(){}
 //添加客户端
-Wss.prototype._addClient = function(req, socket){
+Wss.prototype.addClient = function(req, socket){
     //有websocket请求头
     let key = "";
     for(let i =0; i < req.rawHeaders.length; i++)
@@ -41,14 +41,14 @@ Wss.prototype.listen = function(srv, path)
     {
         if(!path)
         {
-            this._addClient(req, socket);
+            this.addClient(req, socket);
             return;
         }
 
         let {pathname} = parse(req.url);
         if(~req.url.indexOf(pathname)) 
         {
-            this._addClient(req, socket);
+            this.addClient(req, socket);
         }
 
     });
