@@ -14,27 +14,25 @@
     /**
      * 输出错误的函数 
      */
-    function debug(str = "")
-    {
+    function debug (str = "") {
         console.error("[lilin-wss-client报错]：" + str);
     }
 
     /**
      * Evets类
      */
-    function Events()
-    {
+    function Events () {
         this._events = {};
     }
     Events.prototype = {
         consotructor: Events,
         //注册事件
-        on: function(eventName, cb){
+        on: function (eventName, cb) {
             if(!eventName || !cb || (typeof cb !== "function") ) throw new Error("注册事件出错");
             !this._events[eventName] && (this._events[eventName] = [cb]) || this._events[eventName].push(cb); 
         },
         //触发事件
-        trigger: function(eventName, data){
+        trigger: function (eventName, data) {
             this._events[eventName] && this._events[eventName].forEach(cb=>{cb(data)});
         }
     }
@@ -42,8 +40,7 @@
     /**
      * wss类
      */
-    function Ws(url)
-    {
+    function Ws (url) {
         this._reveiceEvents = new Events();
         this._url = url;
         this._sock = null;
@@ -64,66 +61,47 @@
         //初始化websocket
         this._init();
     }
-    Ws.prototype._init = function()
-    {   
-        /**
-         * 链接超时处理
-         * 超时时间截止，检查链接状况，若无连接则关闭连接 
-         */
-        this._t1 = setTimeout(() => 
-        {
+    Ws.prototype._init = function () {   
+
+        this._t1 = setTimeout(() => {
             clearTimeout(this._t1);
-            if(this._sock.readyState !== 1)
-            {
+            if (this._sock.readyState !== 1) {
                 debug("创建连接超时!");
-                this._sock.close(1000);
+                this._sock.close();
             }
         }, this.timeout);
 
-
         this._sock = new WebSocket(this._url);
-        this._sock.onmessage = e => 
-        {
+        this._sock.onmessage = e => {
             //优先获取自定义pong回复
-            if(e.data === "PONG")
-            {
+            if (e.data === "PONG") {
                 this._t3 && clearTimeout(this._t3);
                 return;
             }
             //然后再处理数据（自定义事件）
-            try 
-            {
+            try {
                 let eventObj = JSON.parse(e.data);
                 this._reveiceEvents.trigger(eventObj.name, eventObj.data);
-            } 
-            catch (e)
-            {
+            } catch (e) {
                 throw new Error("Ws 底层json解析错误");
             }
         }
-        this._sock.onopen = () => 
-        {   
+        this._sock.onopen = () => {   
             //触发open事件
             this._reveiceEvents.trigger("open");
 
-            //执行ping轮询
+            //执行心跳保持连接
             this._keepConnection();
         }
-        this._sock.onerror = err => 
-        {
+        this._sock.onerror = err => {
             //这里的清除全部定时器虽然有点多余，但是有的情况下，websocket会直接触发onerror，所以不得不做处理
-            clearTimeout(this._t1);
-            clearInterval(this._t2);
-            clearTimeout(this._t3);
+            this._clearKeepConnection();
 
             this._reveiceEvents.trigger("error");
         }
-        this._sock.onclose = () => 
-        {   
+        this._sock.onclose = () => {   
             //这里的清除全部定时器虽然有点多余，但是有的情况下，websocket会直接触发onclose，所以不得不做处理
-            clearTimeout(this._t1);
-            clearInterval(this._t2);
-            clearTimeout(this._t3);
+            this._clearKeepConnection();
 
             //触发close事件
             this._reveiceEvents.trigger("close");
@@ -133,24 +111,19 @@
         }
     }
 
-    Ws.prototype._keepConnection = function()
-    {   
+    Ws.prototype._keepConnection = function() {   
         //循环发送PING
-        this._t2 = setInterval(()=>
-        {   
-            if(this._sock.readyState !== 1)
-            {
+        this._t2 = setInterval(() => {   
+            if (this._sock.readyState !== 1) {
                 return;
             }
             //发送PING
             this._sock.send("PING");
             //如果在下一个ping发出之前没有pong回复，那么高定时器回调就执行判断链接即为中断，直接执行sock.close();
-            this._t3 = setInterval(()=> 
-            {
+            this._t3 = setInterval(() => {
                 clearInterval(this._t2);
                 clearTimeout(this._t3);
-                if(this._sock.readyState === 1)
-                {
+                if (this._sock.readyState === 1) {
                     debug("连接已中断!");
                     this._sock.close();
                 }
@@ -160,16 +133,18 @@
         }, this.duration);
     }
 
-    Ws.prototype.on = function(eventName, cb)
-    {
-        if(!eventName || !cb || (typeof cb !== "function") ) throw new Error("注册事件出错");
+    Ws.prototype._clearKeepConnection = function () {
+        clearInterval(this._t2);
+        clearTimeout(this._t3);
+    }
+
+    Ws.prototype.on = function (eventName, cb) {
+        if (!eventName || !cb || (typeof cb !== "function") ) throw new Error("注册事件出错");
         this._reveiceEvents.on(eventName, cb);
     }
 
-    Ws.prototype.trigger = function(eventName, data)
-    {
-        if(this._sock.readyState !== 1)
-        {
+    Ws.prototype.trigger = function (eventName, data) {
+        if (this._sock.readyState !== 1) {
             return;
         }
         let eventObj = {

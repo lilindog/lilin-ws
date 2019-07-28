@@ -22,13 +22,11 @@ wss.on("connection", sock=>{
 
     clients.add(sock);
 
-    sock.on("hello", data=>
-    {
+    sock.on("hello", data => {
         console.log(data);
     });
 
-    sock.on("close", sock=>
-    {
+    sock.on("close", sock => {
         console.log("删除一个客户端")
         clients.delete(sock);
     });
