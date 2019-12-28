@@ -21,16 +21,20 @@
 
     ws.on("hello2", data=>
     {
-        console.log(data);
+        // console.log(data);
     });
 
     let index = 0;
     function f() 
     {   
-        setInterval(() => 
+        setInterval(async () => 
         {
             index++;
-            ws.trigger("hello", "你好后端"+index);    
+            try {
+                console.log(await ws.trigger("hello", "你好后端"+index));    
+            } catch(err) {
+                console.log(err);
+            }
         }, 1000);
     }
 

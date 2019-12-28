@@ -1,15 +1,23 @@
 "use strict"
 
-
 /**
  * 配合 lilin-wss 模块使用的前端库 （仓库：https://github.com/lilindog/lilin-wss）
  * created by lilin on 2019.4.3 15:07
  * last update 2019/5/25
  */
 
-!function()
-{
-    window.Ws = Ws;
+!function () {
+    
+    /**
+     * 工具集合 
+     */
+    const tools = {
+        //生成随机key
+        buildRandomKey () {
+            return `key-${String(Math.random()).replace(/\./g, "")}-${new Date().getTime()}`;
+        }
+    }
+
 
     /**
      * 输出错误的函数 
@@ -37,6 +45,8 @@
         }
     }
 
+    window.Ws = Ws;
+
     /**
      * wss类
      */
@@ -44,6 +54,13 @@
         this._reveiceEvents = new Events();
         this._url = url;
         this._sock = null;
+
+        /**
+         *服务端接收成功回调事件集合 
+         *
+         * 结构如： {key: callback}
+         */
+        this._resCallBack = {};
 
         //链接超时定时器
         this._t1 = null, //{setTimeout}
@@ -81,6 +98,12 @@
             //然后再处理数据（自定义事件）
             try {
                 let eventObj = JSON.parse(e.data);
+                //发送状态回调处理
+                if (eventObj.key && this._resCallBack[eventObj.key]) {
+                    this._resCallBack[eventObj.key]();
+                    delete this._resCallBack[eventObj.key];
+                    console.log("[接收]：" + Object.keys(this._resCallBack).length);
+                }
                 this._reveiceEvents.trigger(eventObj.name, eventObj.data);
             } catch (e) {
                 throw new Error("Ws 底层json解析错误");
@@ -143,15 +166,35 @@
         this._reveiceEvents.on(eventName, cb);
     }
 
+    /**
+     * 向后端发送事件 
+     * 
+     * @return {Promise}
+     */
     Ws.prototype.trigger = function (eventName, data) {
         if (this._sock.readyState !== 1) {
             return;
         }
-        let eventObj = {
+        const 
+        key = tools.buildRandomKey(),
+        eventObj = {
+            key,
             name: eventName,
             data: data
         };
         this._sock.send(JSON.stringify(eventObj));
+        //发送消息超时没有回复时， 执行发送状态回调
+        setTimeout(() => {
+            //其实这里可以在返回状态的时候来销毁这个回调，更优雅。 这里暂时就这样简单处理了
+            this._resCallBack[key] && this._resCallBack[key](false);
+            delete this._resCallBack[key];
+        }, this.timeout);
+        return new Promise((resolve, reject) => {
+            this._resCallBack[key] = function (is = true) {
+                is ? resolve("ok") : reject("error");
+            }
+            console.log("[发送]：" + Object.keys(this._resCallBack).length);
+        });
     }
 
 }();
