@@ -14,7 +14,7 @@
     const tools = {
         //生成随机key
         buildRandomKey () {
-            return `key-${String(Math.random()).replace(/\./g, "")}-${new Date().getTime()}`;
+            return `client_key-${String(Math.random()).replace(/\./g, "")}-${new Date().getTime()}`;
         }
     }
 
@@ -98,12 +98,24 @@
             //然后再处理数据（自定义事件）
             try {
                 let eventObj = JSON.parse(e.data);
-                //发送状态回调处理
-                if (eventObj.key && this._resCallBack[eventObj.key]) {
-                    this._resCallBack[eventObj.key]();
-                    delete this._resCallBack[eventObj.key];
-                    console.log("[接收]：" + Object.keys(this._resCallBack).length);
+
+                if (eventObj.key) {
+                    const key = eventObj.key;
+                    //发送状态回调处理
+                    if (/client_key/.test(key) && this._resCallBack[key]) {
+                        this._resCallBack[eventObj.key]();
+                        delete this._resCallBack[eventObj.key];
+                        console.log("[接收]：" + Object.keys(this._resCallBack).length);
+                        return;
+                    }
+                    //服务端状态返回
+                    if (/server_key/.test(key)) {
+                        this._sock.send(JSON.stringify({
+                            key
+                        }));
+                    }
                 }
+
                 this._reveiceEvents.trigger(eventObj.name, eventObj.data);
             } catch (e) {
                 throw new Error("Ws 底层json解析错误");
@@ -182,19 +194,22 @@
             name: eventName,
             data: data
         };
-        this._sock.send(JSON.stringify(eventObj));
-        //发送消息超时没有回复时， 执行发送状态回调
-        setTimeout(() => {
-            //其实这里可以在返回状态的时候来销毁这个回调，更优雅。 这里暂时就这样简单处理了
-            this._resCallBack[key] && this._resCallBack[key](false);
-            delete this._resCallBack[key];
-        }, this.timeout);
-        return new Promise((resolve, reject) => {
+        const p = new Promise((resolve, reject) => {
             this._resCallBack[key] = function (is = true) {
                 is ? resolve("ok") : reject("error");
             }
             console.log("[发送]：" + Object.keys(this._resCallBack).length);
         });
+        const timer = setTimeout(() => {
+            //其实这里可以在返回状态的时候来销毁这个回调，更优雅。 这里暂时就这样简单处理了
+            this._resCallBack[key] && this._resCallBack[key](false);
+            delete this._resCallBack[key];
+            clearTimeout(timer);
+        }, this.timeout);
+
+        this._sock.send(JSON.stringify(eventObj));
+
+        return p;
     }
 
 }();

@@ -13,6 +13,15 @@ class Tools{
         child.prototype = new F();
         child.prototype.constructor = child;
     }
+
+    /**
+     * 生成随机key 
+     * 
+     * @return {String}
+     */
+    buildRandomKey () {
+        return `server_key-${String(Math.random()).replace(/\./, "")}-${new Date().getTime()}`;
+    }
 }
 
 module.exports = new Tools();

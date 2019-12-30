@@ -14,9 +14,15 @@ tools.extend(Ws, Emt);
 
 //socket类
 function Ws(socket){
-    this.sock = socket;
 
-    this.sock.on("data", chunk => {
+    /**
+     * 想客户端发出消息接受状态反馈回掉 
+     */
+    this._resCallback = {};
+
+    this.sock = socket; 
+
+    this.sock.on("data", chunk => { 
         this._receive(chunk);
     });
 
@@ -69,14 +75,29 @@ Ws.prototype._pong = function () {
  * @description 与前端库lilin-wss库配合的事件触发方法
  * @param {String} eventName 事件名
  * @param {String} data 数据，一般是json
+ * @return {Promise}
  */
 Ws.prototype.trigger = function (eventName, data) {
     //这个对象是与前端lilin-wss库约定好的
+    const key = tools.buildRandomKey();
     let eventObj = {
+        key, 
         name: eventName,
         data: data
     }
+    const p = new Promise((resolve, reject) => {
+        this._resCallback[key] = (is = true) => {
+            is ? resolve("ok") : reject("error");
+        }
+    });
+    const timer = setTimeout(() => {
+        this._resCallback[key] && this._resCallback[key](false);
+        delete this._resCallback[key];
+        clearTimeout(timer);
+    }, 3000);//暂定3秒
+    
     this._send(JSON.stringify(eventObj));
+    return p;
 }
 
 module.exports = Ws;

@@ -36,8 +36,11 @@ wss.on("connection", sock=>{
 let index = 0;
 setInterval(() => {
     index++;
-    clients.forEach(sock=>{
-        sock.trigger("hello2", "你好前端"+index);
+    clients.forEach(async sock=>{
+        try {
+            console.log(await sock.trigger("hello2", "你好前端"+index));
+        } catch(err) {
+            console.log(err);
+        }
     });
-}, 1000);
-
+}, 1);
