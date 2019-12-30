@@ -27,6 +27,13 @@ function Ws(socket){
     });
 
     this.sock.on("error", error => {
+        if (Reflect.has(error, "code")) {
+            //正常错误拦截
+            if (error.code === "ECONNRESET") {
+                console.log("ECONNRESET");
+                return;
+            }
+        }
         this.emit("error", error);
     });
 
